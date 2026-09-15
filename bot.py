@@ -1,176 +1,50 @@
 import asyncio
 import os
-
+from aiohttp import web
 from aiogram import Bot, Dispatcher, F
-from aiogram.filters import Command, CommandStart
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, WebAppInfo
+from aiogram.filters import Command
+from aiogram.types import Message, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
-MINI_APP_URL = os.getenv("MINI_APP_URL", "").strip()
-SUPPORT_URL = "https://t.me/marketaisupport"
+BOT_TOKEN=os.getenv('BOT_TOKEN','').strip()
+MINI_APP_URL=os.getenv('MINI_APP_URL','').strip()
+PORT=int(os.getenv('PORT','10000'))
+SUPPORT_URL='https://t.me/marketaisupport'
+if not BOT_TOKEN: raise RuntimeError('BOT_TOKEN is not set')
+if not MINI_APP_URL: raise RuntimeError('MINI_APP_URL is not set')
+if not MINI_APP_URL.startswith('https://'): raise RuntimeError('MINI_APP_URL must start with https://')
+dp=Dispatcher()
 
-
-def app_button():
-    return InlineKeyboardButton(
-        text="⚡ Открыть AI Comfort Signal",
-        web_app=WebAppInfo(url=MINI_APP_URL),
-    )
-
-
-def start_keyboard():
+def kb():
     return InlineKeyboardMarkup(inline_keyboard=[
-        [app_button()],
-        [
-            InlineKeyboardButton(text="📖 Как работает?", callback_data="how_it_works"),
-            InlineKeyboardButton(text="📊 Возможности", callback_data="features"),
-        ],
-        [
-            InlineKeyboardButton(text="💬 Поддержка", url=SUPPORT_URL),
-            InlineKeyboardButton(text="ⓘ О боте", callback_data="about_bot"),
-        ],
-    ])
+        [InlineKeyboardButton(text='⚡ Открыть AI Comfort Signal',web_app=WebAppInfo(url=MINI_APP_URL))],
+        [InlineKeyboardButton(text='📖 Как работает?',callback_data='how'),InlineKeyboardButton(text='📊 Возможности',callback_data='features')],
+        [InlineKeyboardButton(text='💬 Поддержка',url=SUPPORT_URL),InlineKeyboardButton(text='ⓘ О боте',callback_data='about')]])
 
-
-def back_keyboard():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [app_button()],
-        [InlineKeyboardButton(text="◀️ Назад", callback_data="back_start")],
-    ])
-
-
-START_TEXT = """
-🤖 <b>AI Comfort Signal</b>
-
-Добро пожаловать!
-
-Здесь ты можешь анализировать рынок, изучать сигналы и отслеживать собственную статистику. 📊
-
-🧠 AI-анализ
-🎯 Рыночные сигналы
-🧭 MTF-анализ
-📈 Графики
-🔍 Backtest
-📚 История
-🛡️ Контроль риска
-📊 Аналитика
-
-💡 Не обещаем лёгких денег.
-Даём инструменты, данные и возможность выстроить свой подход к рынку.
-
-🚀 <b>Начни с первого анализа.</b>
-"""
-
-HOW_TEXT = """
-📖 <b>Как работает AI Comfort Signal?</b>
-
-1️⃣ Выбираешь рынок и актив.
-2️⃣ Выбираешь таймфрейм.
-3️⃣ Запускаешь анализ.
-4️⃣ Система проверяет доступные технические факторы.
-5️⃣ Получаешь результат: 🟢 CALL / 🔴 PUT / 🔵 WAIT
-
-⚠️ Сигнал не является гарантией результата. Рынок может двигаться иначе.
-"""
-
-FEATURES_TEXT = """
-📊 <b>Возможности AI Comfort Signal</b>
-
-🎯 Сигналы
-🧭 MTF-анализ
-📈 Live Chart
-🔍 Backtest
-📚 История
-📊 Аналитика
-🧠 AI Assistant
-🛡️ Риск и лимиты
-
-⚡ Всё основное находится внутри Mini App.
-"""
-
-ABOUT_TEXT = """
-ⓘ <b>AI Comfort Signal</b>
-
-Ваш интеллектуальный помощник для анализа рынка.
-
-Приложение объединяет рыночные данные, технический анализ, сигналы, статистику и инструменты контроля риска в одном Telegram Mini App.
-
-🚀 Меньше хаоса — больше структуры при работе с рынком.
-
-⚠️ Приложение не гарантирует прибыль и не является финансовой рекомендацией.
-"""
-
-
-async def start_handler(message: Message):
-    await message.answer(START_TEXT, reply_markup=start_keyboard(), parse_mode="HTML")
-
-
-async def help_handler(message: Message):
-    await message.answer(HOW_TEXT, reply_markup=back_keyboard(), parse_mode="HTML")
-
-
-async def support_handler(message: Message):
-    await message.answer(
-        "💬 <b>Нужна помощь?</b>\n\nМы постараемся разобраться вместе.",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="💬 Открыть чат поддержки", url=SUPPORT_URL)],
-            [app_button()],
-        ]),
-        parse_mode="HTML",
-    )
-
-
-async def about_handler(message: Message):
-    await message.answer(ABOUT_TEXT, reply_markup=back_keyboard(), parse_mode="HTML")
-
-
-async def how_callback(callback: CallbackQuery):
-    await callback.message.edit_text(HOW_TEXT, reply_markup=back_keyboard(), parse_mode="HTML")
-    await callback.answer()
-
-
-async def features_callback(callback: CallbackQuery):
-    await callback.message.edit_text(FEATURES_TEXT, reply_markup=back_keyboard(), parse_mode="HTML")
-    await callback.answer()
-
-
-async def about_callback(callback: CallbackQuery):
-    await callback.message.edit_text(ABOUT_TEXT, reply_markup=back_keyboard(), parse_mode="HTML")
-    await callback.answer()
-
-
-async def back_callback(callback: CallbackQuery):
-    await callback.message.edit_text(START_TEXT, reply_markup=start_keyboard(), parse_mode="HTML")
-    await callback.answer()
-
-
+def back(): return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='⬅️ Назад',callback_data='back')]])
+START='''🚀 <b>AI Comfort Signal</b>\n\nТвой персональный центр анализа рынка.\n\nПолучай структурированный сигнал <b>CALL / PUT / WAIT</b> и открывай Mini App прямо из Telegram.\n\n⚡ Нажми кнопку ниже, чтобы начать.'''
+@dp.message(Command('start'))
+async def start(m:Message): await m.answer(START,reply_markup=kb(),parse_mode='HTML')
+@dp.message(Command('help'))
+async def help_(m:Message): await m.answer('📖 <b>Помощь</b>\n\nОткрой приложение кнопкой ниже.\n\nЕсли есть проблема — используй «💬 Поддержка».',reply_markup=kb(),parse_mode='HTML')
+@dp.message(Command('support'))
+async def support(m:Message): await m.answer('💬 <b>Поддержка</b>\n\nНапиши в поддержку:',reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='💬 Написать в поддержку',url=SUPPORT_URL)],[InlineKeyboardButton(text='⬅️ В меню',callback_data='back')]]),parse_mode='HTML')
+@dp.message(Command('about'))
+async def about_cmd(m:Message): await m.answer('ⓘ <b>AI Comfort Signal</b>\n\nTelegram Mini App для анализа рынка.\n\nНе является финансовой гарантией или инвестиционной рекомендацией.',reply_markup=back(),parse_mode='HTML')
+@dp.callback_query(F.data=='how')
+async def how(c:CallbackQuery): await c.message.edit_text('📖 <b>Как работает</b>\n\n1️⃣ Выбираешь актив и таймфрейм.\n2️⃣ Приложение анализирует доступные данные.\n3️⃣ Формируется CALL / PUT / WAIT.\n4️⃣ Можно посмотреть факторы и аналитику.\n\n⚠️ Это аналитическая оценка, а не гарантия результата.',reply_markup=back(),parse_mode='HTML'); await c.answer()
+@dp.callback_query(F.data=='features')
+async def features(c:CallbackQuery): await c.message.edit_text('📊 <b>Возможности</b>\n\n• ⚡ CALL / PUT / WAIT\n• 📈 Технический анализ\n• 🔎 Мульти-таймфрейм анализ\n• 📊 История и статистика\n• 🤖 AI-инструменты\n• 📱 Telegram Mini App',reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='⚡ Открыть приложение',web_app=WebAppInfo(url=MINI_APP_URL))],[InlineKeyboardButton(text='⬅️ Назад',callback_data='back')]]),parse_mode='HTML'); await c.answer()
+@dp.callback_query(F.data=='about')
+async def about(c:CallbackQuery): await c.message.edit_text('ⓘ <b>О боте</b>\n\n<b>AI Comfort Signal</b> — интерфейс для анализа рыночных данных и формирования аналитических сигналов.\n\nНе является финансовой гарантией или инвестиционной рекомендацией.',reply_markup=back(),parse_mode='HTML'); await c.answer()
+@dp.callback_query(F.data=='back')
+async def back_(c:CallbackQuery): await c.message.edit_text(START,reply_markup=kb(),parse_mode='HTML'); await c.answer()
+async def health(request): return web.Response(text='AI Comfort Signal bot is running')
+async def web_server():
+    app=web.Application(); app.router.add_get('/',health); app.router.add_get('/health',health)
+    runner=web.AppRunner(app); await runner.setup(); await web.TCPSite(runner,'0.0.0.0',PORT).start()
+    print(f'🌐 Health server started on port {PORT}',flush=True)
 async def main():
-    if not BOT_TOKEN:
-        raise RuntimeError("Не задан BOT_TOKEN.")
-    if not MINI_APP_URL:
-        raise RuntimeError("Не задан MINI_APP_URL.")
-    if not MINI_APP_URL.startswith("https://"):
-        raise RuntimeError("MINI_APP_URL должен начинаться с https://")
-
-    bot = Bot(token=BOT_TOKEN)
-    dp = Dispatcher()
-
-    dp.message.register(start_handler, CommandStart())
-    dp.message.register(help_handler, Command("help"))
-    dp.message.register(support_handler, Command("support"))
-    dp.message.register(about_handler, Command("about"))
-
-    dp.callback_query.register(how_callback, F.data == "how_it_works")
-    dp.callback_query.register(features_callback, F.data == "features")
-    dp.callback_query.register(about_callback, F.data == "about_bot")
-    dp.callback_query.register(back_callback, F.data == "back_start")
-
-    print("🤖 AI Comfort Signal bot started")
-
-    try:
-        await dp.start_polling(bot)
-    finally:
-        await bot.session.close()
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+    bot=Bot(BOT_TOKEN); await web_server(); print('🤖 AI Comfort Signal bot started',flush=True)
+    try: await dp.start_polling(bot)
+    finally: await bot.session.close()
+if __name__=='__main__': asyncio.run(main())
